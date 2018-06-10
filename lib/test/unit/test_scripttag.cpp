@@ -7,24 +7,22 @@
 
 TEST(ScriptTag_Test, Default)
 {
-  Object* o = new Object(Scene::instance()->root());
-  ScriptTag* tag = new ScriptTag(o);
+  Scene scene;
+  ScriptTag& tag = scene.new_object<Object>().new_tag<ScriptTag>();
 
   const std::string code = "print(o.scene())";
-  tag->setPropertyValue(ScriptTag::CODE_PROPERTY_KEY, code);
+  tag.setPropertyValue(ScriptTag::CODE_PROPERTY_KEY, code);
 
-  tag->run();
-  // ASSERT_TRUE(true);
+  tag.run();
 }
 
+TEST(ScriptTag_umlaut_Test, Default)
+{
+  Scene scene;
+  ScriptTag& tag = scene.new_object<Object>().new_tag<ScriptTag>();
 
-
-// TEST(ScriptTag_umlaut_Test, Default)
-// {
-//   ScriptTag* tag = new ScriptTag();
-//   const std::string code = "print('ä')";
-//   tag->setPropertyValue(ScriptTag::CODE_PROPERTY_KEY, code);
-//   tag->run();
-//   delete tag;
-// }
+  const std::string code = "print('ä')";
+  tag.setPropertyValue(ScriptTag::CODE_PROPERTY_KEY, code);
+  tag.run();
+}
 

@@ -1,39 +1,56 @@
 #pragma once
 
 #include <map>
+#include <memory>
+#include <vector>
 #include <stdint.h>
 
 class Object;
 class Root;
 
+#include "core/hasproperties.h"
+class Scene;
+class DummyClass
+{
+public:
+  std::vector<std::unique_ptr<int>> m_properties;
+};
+
 class Scene
 {
-private:
-  Scene();
+
 public:
+  using RootObject = Object;
+  Scene();
   ~Scene();
   typedef uint64_t ObjectId;
-  ObjectId add(Object* object);
-  Object* object(const ObjectId& id) const;
-  ObjectId id(const Object* object) const;
 
-  /**
-   * @brief ownership is returned to the caller.
-   */
-  void remove(const Object* object);
+  template<typename ObjectT> ObjectT& new_object()
+  {
+    m_objects.push_back(std::make_unique<ObjectT>(*this));
+    return static_cast<ObjectT&>(*m_objects.back());
+  }
 
-  Object* root() const;
+  void remove(const Object& object);
+  RootObject& root();
+  DummyClass& dummy();
 
+  std::string getPyTestField() const
+  {
+    return pyTestField;
+  }
+
+  void setPyTestField(const std::string& m)
+  {
+    pyTestField = m; 
+  }
+
+  static Scene& currentInstance();
+  static Scene* current;
   
-  static Scene* instance();
-
 private:
-  Object* m_root;
-
-  // don't expose Object* to the outside.
-  typedef std::map<ObjectId, Object*, std::less<>> ObjectMap;
-  typedef std::map<Object*, ObjectId, std::less<>> IdMap;
-  ObjectMap m_objects;
-  IdMap m_ids;
-
+  std::unique_ptr<RootObject> m_root;
+  std::unique_ptr<DummyClass> m_dummy;
+  std::vector<std::unique_ptr<Object>> m_objects;
+  std::string pyTestField;
 };

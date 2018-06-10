@@ -7,8 +7,12 @@ class Scene;
 class Python
 {
 private:
-  Python();
+  class ConstructorTag {
+  public:
+    explicit ConstructorTag() = default;
+  };
 public:
-  bool run(Scene* scene, const std::string code);
-  static Python* instance();
+  Python(ConstructorTag);
+  bool run(Scene& scene, const std::string code);
+  static Python& instance();
 };

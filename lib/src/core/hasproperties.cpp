@@ -1,21 +1,18 @@
 #include "core/hasproperties.h"
 
-HasProperties::Properties HasProperties::properties() const
-{
-  return m_properties;
-}
-
 HasProperties::~HasProperties()
 {
-  for (const auto& key_property : m_properties) {
-    delete key_property.second;
-  }
 }
 
-void HasProperties::addProperty(const PropertyKey& key, Property* property)
+HasProperties::PropertyKey HasProperties::makePropertyKey(const std::string& name) const
 {
   //TODO append name of current class, exploit that class name in super constructor is `super`.
-  const bool notExistedBefore = m_properties.insert(std::make_pair(key, property)).second;
-  assert(notExistedBefore);
+  return name;
+}
+
+void HasProperties::addProperty(const PropertyKey& key, std::unique_ptr<Property> property)
+{
+  assert(m_properties.count(key) == 0);
+  m_properties[key] = std::move(property);
 }
 

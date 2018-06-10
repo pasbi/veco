@@ -5,7 +5,7 @@
 class ScriptTag : public Tag
 {
 public:
-  explicit ScriptTag(Object* owner);
+  explicit ScriptTag(Object& owner);
   ~ScriptTag();
   bool run() override;
 

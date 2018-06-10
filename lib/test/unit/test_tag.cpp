@@ -7,9 +7,9 @@
 
 TEST(Tag_Test, Default)
 {
-  Object* o = new Object(Scene::instance()->root());
-  Tag* tag = new Tag(o);
+  Scene scene;
+  Tag& tag = scene.new_object<Object>().new_tag<Tag>();
   const std::string name = "tag name";
-  tag->setPropertyValue(Tag::NAME_PROPERTY_KEY, name);
-  ASSERT_EQ(tag->propertyValue<std::string>(Tag::NAME_PROPERTY_KEY), name);
+  tag.setPropertyValue(Tag::NAME_PROPERTY_KEY, name);
+  ASSERT_EQ(tag.propertyValue<std::string>(Tag::NAME_PROPERTY_KEY), name);
 }

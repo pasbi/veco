@@ -6,67 +6,74 @@
 #include "object.h"
 #include "tag.h"
 
-// namespace py = pybind11;
-
-// PYBIND11_EMBEDDED_MODULE(ommpfritt, m) {
-//     py::class_<Scene>(m, "Scene")
-//         .def("root", &Scene::root)
-//         .def("instance", &Scene::instance);
-//     py::class_<Object>(m, "Object")
-//         .def(py::init<Object*>())
-//         .def("name", &Object::name)
-//         .def("setName", &Object::setName);
-//     py::class_<Tag>(m, "Tag")
-//         .def(py::init<Object*>());
-// }
-
 namespace py = pybind11;
+using namespace pybind11::literals;
+
+Python::Python(ConstructorTag)
+{
+}
 
 PYBIND11_EMBEDDED_MODULE(ommpfritt, m) {
-    py::class_<Scene, std::shared_ptr<Scene>>(m, "Scene")
-        .def("root", &Scene::root)
-        .def("instance", &Scene::instance);
-    py::class_<Object, std::shared_ptr<Object>>(m, "Object")
-        .def(py::init<Object*>())
-        .def("name", &Object::name)
-        .def("setName", &Object::setName);
-    py::class_<Tag, std::shared_ptr<Tag>>(m, "Tag")
-        .def(py::init<Object*>());
+    // py::class_<Scene>(m, "Scene")
+    //   .def("current", &Scene::currentInstance, py::return_value_policy::reference)
+    //   // .def("root", &Scene::root, py::return_value_policy::reference)
+    //   .def("dummy", &Scene::dummy, py::return_value_policy::reference)
+    //   .def("get", &Scene::getPyTestField)
+    //   .def("set", &Scene::setPyTestField)
+    //   ;
+    py::class_<DummyClass>(m, "Dummy")
+      ;
+
+    // py::class_<Object>(m, "Object")
+    //     // .def("name", &Object::name)
+    //     ;
 }
 
-
-Python::Python()
+bool Python::run(Scene& scene, const std::string code)
 {
-}
+  py::scoped_interpreter guard {};
 
-bool Python::run(Scene* scene, const std::string code)
-{
-  // py::scoped_interpreter guard {};
-  py::initialize_interpreter();
+
+  // try {
+  //   auto py_scene = 42; //py::init<Scene>();
+  //   auto locals = py::dict("scene"_a = scene);
+  // } catch (const pybind11::error_already_set& e) {
+  //   LOG(INFO) << "ERROR HANDLING <<";
+  //   LOG(WARNING) << e.what();
+  //   LOG(INFO) << "ERROR HANDLING >>";
+  //   return false;
+  // }
+
+  // Scene::current = &scene;
+  // py::object pyScene = py::cast(scene);
+  auto locals = py::dict();
+
+  Scene::current = &scene;
 
   try {
-    py::exec(R"(
-import ommpfritt as o
-scene = o.Scene.instance()
-print(scene)
-root = scene.root().name();
-print("end script.", root)
-    )");
+    py::exec(R"(print(2)
+from ommpfritt import Scene
+scene = Scene.current()
+print(scene.dummy())
+print(scene.dummy().name())
+    )", py::globals(), locals);
 
-      LOG(INFO) << "Name: " << scene->root()->name();
+      LOG(INFO) << "Name: " << scene.getPyTestField();
     return true;
-  } catch (const std::exception& e) {
+  } catch (const pybind11::error_already_set& e) {
+    LOG(INFO) << "ERROR HANDLING <<";
     LOG(WARNING) << e.what();
+    LOG(INFO) << "ERROR HANDLING >>";
     return false;
   }
+  return false;
 }
 
-
-Python* Python::instance()
+Python& Python::instance()
 {
-  static Python* instance = nullptr;
+  static std::unique_ptr<Python> instance(nullptr);
   if (instance == nullptr) {
-    instance = new Python();
+    instance = std::make_unique<Python>(Python::ConstructorTag{});
   }
-  return instance;
+  return *instance;
 }

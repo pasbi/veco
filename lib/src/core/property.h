@@ -32,16 +32,16 @@ public:
     return cast<ValueT>() != nullptr;
   }
 
-  template<typename ValueT> const TypedProperty<ValueT>* cast() const
+  template<typename ValueT> const TypedProperty<ValueT>& cast() const
   {
     DISABLE_DANGEROUS_PROPERTY_TYPES
-    return dynamic_cast<const TypedProperty<ValueT>*>(this);
+    return *dynamic_cast<const TypedProperty<ValueT>*>(this);
   }
 
-  template<typename ValueT> TypedProperty<ValueT>* cast() 
+  template<typename ValueT> TypedProperty<ValueT>& cast()
   {
     DISABLE_DANGEROUS_PROPERTY_TYPES
-    return dynamic_cast<TypedProperty<ValueT>*>(this);
+    return *dynamic_cast<TypedProperty<ValueT>*>(this);
   }
 };
 
