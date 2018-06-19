@@ -8,8 +8,10 @@
 TEST(Tag_Test, Default)
 {
   Scene scene;
-  Tag& tag = scene.new_object<Object>().new_tag<Tag>();
+
+  Tag& tag = scene.root().create_tag<Tag>();
+
   const std::string name = "tag name";
-  tag.setPropertyValue(Tag::NAME_PROPERTY_KEY, name);
-  ASSERT_EQ(tag.propertyValue<std::string>(Tag::NAME_PROPERTY_KEY), name);
+  tag.property(Tag::NAME_PROPERTY_KEY).cast<std::string>().set_value(name);
+  ASSERT_EQ(tag.property(Tag::NAME_PROPERTY_KEY).cast<std::string>().value(), name);
 }

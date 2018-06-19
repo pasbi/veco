@@ -7,8 +7,8 @@ const std::string Tag::NAME_PROPERTY_KEY = "name";
 Tag::Tag(Object& owner)
   : m_owner(owner)
 {
-  addProperty( NAME_PROPERTY_KEY,
-               std::make_unique<StringProperty>("<Unnamed Tag>") );
+  add_property( NAME_PROPERTY_KEY,
+                std::make_unique<StringProperty>("<Unnamed Tag>") );
 }
 
 Tag::~Tag()

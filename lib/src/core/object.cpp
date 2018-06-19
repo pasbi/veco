@@ -9,114 +9,100 @@
 
 const std::string Object::TRANSFORMATION_PROPERTY_KEY = "transformation";
 const std::string Object::NAME_PROPERTY_KEY = "name";
+const std::string Object::THE_ANSWER_KEY = "ans";
+
+
+namespace {
+template<typename T> 
+T& emplace(std::vector<std::unique_ptr<T>>& container, std::unique_ptr<T> obj)
+{
+  T& ref = *obj;
+  container.push_back(std::move(obj));
+  return ref;
+}
+
+template<typename T>
+std::unique_ptr<T> extract(std::vector<std::unique_ptr<T>>& container, T& obj)
+{
+  const auto it = std::find_if( std::begin(container),
+                                std::end(container),
+                                [&obj](const std::unique_ptr<T>& a) {
+    return a.get() == &obj;
+  });
+  assert(it != std::end(container));
+  std::unique_ptr<T> uptr = std::move(*it);
+  container.erase(it);
+  return std::move(uptr);
+}
+
+}
 
 Object::Object(Scene& scene)
   : m_parent(nullptr)
   , m_scene(scene)
 {
-  addProperty( TRANSFORMATION_PROPERTY_KEY,
-               std::make_unique<TransformationProperty>(Object::identity()) );
-  addProperty( NAME_PROPERTY_KEY,
-               std::make_unique<StringProperty>("<Unnamed Object>") );
+  add_property( TRANSFORMATION_PROPERTY_KEY,
+                std::make_unique<TransformationProperty>(Object::identity()) );
+  add_property( NAME_PROPERTY_KEY,
+                std::make_unique<StringProperty>("<Unnamed Object>") );
+  add_property( THE_ANSWER_KEY,
+                std::make_unique<IntegerProperty>(42) );
 }
 
 Object::~Object()
 {
-  LOG(INFO) << "DELETE Object(" << (void*) this << ")";
 }
 
 ObjectTransformation Object::transformation() const
 {
-  return propertyValue<ObjectTransformation>(TRANSFORMATION_PROPERTY_KEY);
+  return property(TRANSFORMATION_PROPERTY_KEY).cast<ObjectTransformation>().value();
 }
 
-ObjectTransformation Object::globalTransformation() const
+ObjectTransformation Object::global_transformation() const
 {
   assert(this != nullptr);
 
-  if (isRoot()) {
+  if (is_root()) {
     return transformation();
   } else {
-    return parent().globalTransformation() * transformation();
+    return parent().global_transformation() * transformation();
   }
 }
 
-void Object::setTransformation(const ObjectTransformation& transformation)
+void Object::set_transformation(const ObjectTransformation& transformation)
 {
-  setPropertyValue(TRANSFORMATION_PROPERTY_KEY, transformation);
+  property(TRANSFORMATION_PROPERTY_KEY).cast<ObjectTransformation>().set_value(transformation);
 }
 
-void Object::setGlobalTransformation(const ObjectTransformation& globalTransformation)
+void Object::set_global_transformation(const ObjectTransformation& global_transformation)
 {
-  ObjectTransformation localTransformation;
-  if (isRoot()) {
-    localTransformation = globalTransformation;
+  ObjectTransformation local_transformation;
+  if (is_root()) {
+    local_transformation = global_transformation;
   } else {
     try {
-      localTransformation = parent().globalTransformation().i() * globalTransformation;
+      local_transformation = parent().global_transformation().i() * global_transformation;
     } catch (const std::runtime_error& e) {
       assert(false);
     }
   }
-  setTransformation(localTransformation);
+  set_transformation(local_transformation);
 }
 
-bool Object::isRoot() const
+bool Object::is_root() const
 {
   return m_parent == nullptr;
 }
 
 Object& Object::parent() const
 {
-  assert(!isRoot());
+  assert(!is_root());
   return *m_parent;
-}
-
-std::vector<std::reference_wrapper<Object>> Object::children() const
-{
-  return m_children;
-}
-
-void Object::addChild(Object& child)
-{
-  m_children.push_back(child);
-}
-
-void Object::removeChild(Object& child)
-{
-  m_children.erase(
-    std::remove_if( m_children.begin(), 
-                    m_children.end(),
-                    [&](const std::reference_wrapper<Object>& i) {
-    return &i.get() == &child;
-  }));
-}
-
-void Object::setParent(Object& parent)
-{
-  assert(&parent != this);
-  const ObjectTransformation globalTransformation = this->globalTransformation();
-  if (m_parent != nullptr) {
-    m_parent->removeChild(*this);
-  }
-  m_parent = &parent;
-  m_parent->addChild(*this);
-  setGlobalTransformation(globalTransformation);
 }
 
 void Object::transform(const ObjectTransformation& transformation)
 {
-  setTransformation(transformation * this->transformation());
-}
-
-std::vector<std::reference_wrapper<Tag>> Object::tags() const
-{
-  std::vector<std::reference_wrapper<Tag>> tags;
-  tags.reserve(m_tags.size());
-  for (const std::unique_ptr<Tag>& tag : m_tags) {
-    tags.push_back(std::ref(*tag));
-  }
-  return tags;
+  set_transformation(transformation * this->transformation());
 }
 
 Scene& Object::scene() const
@@ -124,9 +110,42 @@ Scene& Object::scene() const
   return m_scene;
 }
 
+Object& Object::adopt(std::unique_ptr<Object> object)
+{
+  assert(&object->scene() == &scene());
+  assert(object->is_root());
+  const ObjectTransformation gt = object->global_transformation();
 
+  object->m_parent = this;
+  Object& oref = emplace(m_children, std::move(object));
+  oref.set_global_transformation(gt);
+  return oref;
+}
 
+std::unique_ptr<Object> Object::repudiate(Object& object)
+{
+  const ObjectTransformation gt = object.global_transformation();
+  object.m_parent = nullptr;
+  std::unique_ptr<Object> optr = extract(m_children, object);
+  object.set_global_transformation(gt);
+  return optr;
+}
 
+Tag& Object::add_tag(std::unique_ptr<Tag> tag)
+{
+  return emplace(m_tags, std::move(tag));
+}
+
+std::unique_ptr<Tag> Object::remove_tag(Tag& tag)
+{
+  return extract(m_tags, tag);
+}
+
+void Object::reset_parent(Object& new_parent)
+{
+  assert(!is_root()); // use Object::adopt for roots.
+  new_parent.adopt(m_parent->repudiate(*this));
+}
 
 ObjectTransformation Object::translation(const Float& dx, const Float dy)
 {

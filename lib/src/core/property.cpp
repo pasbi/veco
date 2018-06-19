@@ -18,20 +18,20 @@ ReferenceProperty::ReferenceProperty()
 {
 }
 
-bool ReferenceProperty::isReferenced(const Object* candidate)
+bool ReferenceProperty::is_referenced(const Object* candidate)
 {
   return std::find(m_references.begin(), m_references.end(), candidate) != m_references.end();
 }
 
-void ReferenceProperty::setValue(Object* reference)
+void ReferenceProperty::set_value(Object* reference)
 {
   const Object* oldReference = value();
   if (oldReference != nullptr) {
-    assert(isReferenced(oldReference
+    assert(is_referenced(oldReference
       ));
     m_references.erase(oldReference);
   }
-  TypedProperty<Object*>::setValue(reference);
+  TypedProperty<Object*>::set_value(reference);
   if (reference != nullptr) {
     m_references.emplace(reference);
   }
@@ -54,5 +54,17 @@ StringProperty::StringProperty(const std::string& defaultValue)
 
 TransformationProperty::TransformationProperty(const ObjectTransformation& defaultValue)
   : TypedProperty<ObjectTransformation>(defaultValue)
+{
+}
+
+
+template<>
+py::object TypedProperty<Object*>::get_py_object() const
+{
+  return py::object();
+}
+
+template<>
+void TypedProperty<Object*>::set_py_object(const py::object& value)
 {
 }

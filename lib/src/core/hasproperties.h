@@ -15,36 +15,15 @@ public:
 
   virtual ~HasProperties();
 
-  template<typename T> void setPropertyValue(const PropertyKey& key, T value)
+  Property& property(const PropertyKey& key) const
   {
-    property<T>(key).setValue(value);
+    return *m_properties.at(key);
   }
 
-  template<typename T> T propertyValue(const PropertyKey& key) const
-  {
-    return property<T>(key).value();
-  }
-
-  template<typename T> T& propertyValue(const PropertyKey& key)
-  {
-    return property<T>(key).value();
-  }
-
-  template<typename T> TypedProperty<T>& property(const PropertyKey& key) const
-  {
-    try {
-      TypedProperty<T>& property = m_properties.at(key)->cast<T>();
-      return property;
-    } catch (const std::out_of_range&) {
-      LOG(FATAL) << "Tried to access non-existend property: '" << key << "'.";
-      exit(1);
-    }
-  }
-
-  PropertyKey makePropertyKey(const std::string& name) const;
+  PropertyKey make_property_key(const std::string& name) const;
 
 protected:
-  void addProperty(const PropertyKey& key, std::unique_ptr<Property> property);
+  void add_property(const PropertyKey& key, std::unique_ptr<Property> property);
 
 private:
   Properties m_properties;

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <pybind11/embed.h>
 #include <string>
 #include <typeinfo>
 #include <unordered_set>
 #include "core/types.h"
 
+namespace py = pybind11;
 template<typename ValueT> class TypedProperty;
 class Object;
 
@@ -43,11 +45,13 @@ public:
     DISABLE_DANGEROUS_PROPERTY_TYPES
     return *dynamic_cast<TypedProperty<ValueT>*>(this);
   }
+
+  virtual void set_py_object(const py::object& value) = 0;
+  virtual py::object get_py_object() const = 0;
 };
 
 template<typename ValueT>
 class TypedProperty : public Property
-
 {
 protected:
   TypedProperty(ValueT defaultValue)
@@ -56,9 +60,10 @@ protected:
     , m_defaultValue(defaultValue)
   {
   }
+
   
 public:
-  virtual void setValue(ValueT value)
+  virtual void set_value(ValueT value)
   {
     m_value = value;
   }
@@ -82,6 +87,16 @@ public:
   {
     return typeid(ValueT);
   }
+
+  py::object get_py_object() const override;
+
+  void set_py_object(const py::object& value) override;
+  // {
+  //   return py::cast(m_value);
+  // }
+  // {
+  //   m_value = value.cast<ValueT>();
+  // }
 
 private:
   ValueT m_value;
@@ -112,14 +127,27 @@ public:
   explicit TransformationProperty(const ObjectTransformation& defaultValue);
 };
 
-
 class ReferenceProperty : public TypedProperty<Object*>
 {
 public:
   ReferenceProperty();
-  static bool isReferenced(const Object* candidate);
-  void setValue(Object* value) override;
+  static bool is_referenced(const Object* candidate);
+  void set_value(Object* value) override;
 
 private:
   static std::unordered_set<const Object*> m_references;
 };
+
+
+
+template<typename ValueT>
+py::object TypedProperty<ValueT>::get_py_object() const
+{
+  return py::cast(m_value);
+}
+
+template<typename ValueT>
+void TypedProperty<ValueT>::set_py_object(const py::object& value)
+{
+  m_value = value.cast<ValueT>();
+}
